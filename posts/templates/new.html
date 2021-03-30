@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Новая запись{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-8 p-5">
+    <div class="card">
+      <div class="card-header" style="background-color: rgb(197, 255, 197)">
+        {% if view_def == "new_post" %}
+        Добавить запись
+        {% elif view_def == "post_edit" %}
+        Редактировать запись
+        {% endif %}
+      </div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <a>{{ form.text.label }}</a>
+          {{ form.text }}
+          <a>{{ form.group.label }}</a>
+          {{ form.group }}
+          <a>{{ form.image.label }}</a>
+          <p>{{ form.image }}</p>
+          <div class="row justify-content-center p-2">
+            <button type="submit" class="btn btn-primary" style="background-color: rgb(25, 177, 25)">
+              {% if view_def == "new_post" %}
+              Опубликовать
+              {% elif view_def == "post_edit" %}
+              Сохранить
+              {% endif %}
+            </button>
+          </div>
+        </form>
+      </div> <!-- card body -->
+    </div> <!-- card -->
+  </div> <!-- col -->
+</div> <!-- row -->
+
+{% endblock %}

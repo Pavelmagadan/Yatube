@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Последние обновления на сайте{% endblock %}
+{% block header %}<div class="col-md-12">Последние обновления на сайте</div>{% endblock %}
+{% block content %}
+
+{% load cache %}
+{% cache 20 index_page page_number %}
+<div class="container">
+  {% for post in page %}
+  <!-- Начало блока с отдельным постом -->
+  {% include "includes/post_item.html" with post=post %}
+  <!-- Конец блока с отдельным постом -->
+  {% endfor %}
+</div>
+{% endcache %}
+{% if page.has_other_pages %}
+{% include "paginator.html" with items=page paginator=paginator%}
+{% endif %}
+
+{% endblock %}
