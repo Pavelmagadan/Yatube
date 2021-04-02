@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from posts.models import Group, Post, User
+from posts.models import Comment, Follow, Group, Post, User
 
 
 class PostPagesTests(TestCase):
@@ -294,7 +294,7 @@ class CashTest(TestCase):
 
     def test_index_page_cash(self):
         """Посты страницы Index хранятся в cash и обновляются
-        каждые 20 сек"""
+            каждые 20 сек"""
         response_start = CashTest.guest_client.get(
             reverse('index') + '?page=2'
         )
@@ -302,11 +302,9 @@ class CashTest(TestCase):
             text='Новый пост',
             author=CashTest.test_user
         )
-#        start = len(response_start.context['page'])
         response_cashe = CashTest.guest_client.get(
             reverse('index') + '?page=2'
         )
-        # cash = len(response_cashe.context['page'])
         cache.clear()
         response_timeout = CashTest.guest_client.get(
             reverse('index') + '?page=2'
@@ -319,6 +317,138 @@ class CashTest(TestCase):
             response_start.content,
             response_timeout.content,
             'При отчистке кеша контент не изменился!')
-        # self.assertEqual(
-        #     start,
-        #     cash)
+
+
+class FollowTest(TestCase):
+    def setUp(self):
+        self.user_follower = User.objects.create_user(username='Mr_Follower')
+        self.user_ignor = User.objects.create_user(username='Mr_Ignor')
+        self.user_author = User.objects.create_user(username='Mr_Author')
+        self.follow = Follow.objects.create(
+            user=self.user_follower,
+            author=self.user_author
+        )
+        self.authors_post = Post.objects.create(
+            text='Запись автора',
+            author=self.user_author
+        )
+        self.authorized_follower = Client()
+        self.authorized_follower.force_login(self.user_follower)
+        self.authorized_ignor = Client()
+        self.authorized_ignor.force_login(self.user_ignor)
+
+    def test_profile_follow(self):
+        """Неподписанный пользователь может подписаться на автора"""
+        self.authorized_ignor.get(
+            reverse(
+                'profile_follow',
+                kwargs={'username': self.user_author.username}
+            ),
+            follow=True
+        )
+        self.assertTrue(
+            self.user_author.following.filter(user=self.user_ignor).exists(),
+            'Пользователь не может подписаться на автора'
+        )
+
+    def test_profile_unfollow(self):
+        """Подписанный пользователь может отписаться от автора"""
+        self.authorized_follower.get(
+            reverse(
+                'profile_unfollow',
+                kwargs={'username': self.user_author.username}
+            ),
+            follow=True
+        )
+        self.assertFalse(
+            self.user_author.following.filter(
+                user=self.user_follower).exists(),
+            'Пользователь не может отписаться от автора'
+        )
+
+    def test_followers_follow(self):
+        """В ленте подписанного пользователя есть записи автора"""
+        response = self.authorized_follower.get(reverse('follow_index'))
+        self.assertTrue(
+            self.authors_post in response.context['page'],
+            'В ленте подписанного пользователя нет записей автора'
+        )
+
+    def test_ignors_follow(self):
+        """В ленте неподписанного пользователя нет записей автора"""
+        response = self.authorized_ignor.get(reverse('follow_index'))
+        self.assertTrue(
+            self.authors_post not in response.context['page'],
+            'В ленте неподписанного пользователя есть записи автора'
+        )
+
+
+class CommentTest(TestCase):
+    def setUp(self):
+        self.user_reader = User.objects.create_user(username='Mr_Reader')
+        self.user_author = User.objects.create_user(username='Mr_Author')
+        self.authors_post = Post.objects.create(
+            text='Запись автора',
+            author=self.user_author
+        )
+        self.guest_client = Client()
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user_reader)
+
+    def test_comment_authorizate(self):
+        """Авторизованный пользователь может оставить коментарий"""
+        comment_data = {
+            'text': 'Коментарий авторизованного пользователя',
+        }
+        response = self.authorized_client.post(
+            reverse(
+                'add_comment',
+                kwargs={
+                    'username': self.user_author.username,
+                    'post_id': self.authors_post.id,
+                }
+            ),
+            data=comment_data,
+            follow=True
+        )
+        self.assertRedirects(
+            response,
+            reverse(
+                'post',
+                kwargs={
+                    'username': self.user_author.username,
+                    'post_id': self.authors_post.id
+                }
+            ),
+        )
+        self.assertTrue(
+            Comment.objects.filter(
+                text=comment_data['text'],
+                author=self.user_reader,
+                post=self.authors_post
+            ).exists(),
+            'Коментарий не создается или сохраняется с неправильными данными'
+        )
+
+    def test_comment_guest(self):
+        """Неавторизованный пользователь не может оставить коментарий"""
+        comment_data = {
+            'text': 'Коментарий которого не должно быть',
+        }
+        self.guest_client.post(
+            reverse(
+                'add_comment',
+                kwargs={
+                    'username': self.user_author.username,
+                    'post_id': self.authors_post.id,
+                }
+            ),
+            data=comment_data,
+            follow=True
+        )
+        self.assertEqual(
+            Comment.objects.count(),
+            0,
+            'Неавторизованный пользователь не должен '
+            'иметь возможности добавлять коментарии'
+        )

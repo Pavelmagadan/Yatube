@@ -28,8 +28,8 @@ class URLAccessTests(TestCase):
         )
 
     def test_available_page_for_anonymous_user(self):
-        """Неавторизованный пользователь имеет доступ
-        только к ожидаемым страницам"""
+        """Неавторизованный пользователь имеет доступ только"""
+        """к ожидаемым страницам"""
         url_list = [
             reverse('index'),
             reverse(
@@ -55,8 +55,7 @@ class URLAccessTests(TestCase):
                 self.assertEqual(response.status_code, 200)
 
     def test_available_page_for_authorized_user(self):
-        """Авторизованный пользователь имеет доступ
-        к ожидаемым страницам"""
+        """Авторизованный пользователь имеет доступ к ожидаемым страницам"""
         url_list = [
             reverse('new_post'),
             reverse(
@@ -74,8 +73,8 @@ class URLAccessTests(TestCase):
                 self.assertEqual(response.status_code, 200)
 
     def test_redirect_from_page_for_anonymous_user(self):
-        """Ананимный пользователь отсылается на ожидаемые
-        страницы при попытке доступа к запрещенным страницам"""
+        """Ананимный пользователь отсылается на ожидаемые страницы """
+        """при попытке доступа к запрещенным страницам"""
         new_post_url = reverse('new_post')
         new_post_redirect_url = '/auth/login/?next=/new/'
         post_edit_url = reverse(
@@ -103,8 +102,8 @@ class URLAccessTests(TestCase):
                 self.assertRedirects(response, expected_page)
 
     def test_redirect_from_post_edit_page(self):
-        """Авторизованный пользователь отсылается на ожидаемую
-        страницу при попытке доступа к странице редактирования чужого поста"""
+        """Авторизованный пользователь отсылается на ожидаемую страницу """
+        """при попытке доступа к странице редактирования чужого поста"""
         post_edit_url = reverse(
             'post_edit',
             kwargs={
