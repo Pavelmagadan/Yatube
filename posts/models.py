@@ -29,7 +29,12 @@ class Post(models.Model):
         help_text='Выберете группу в которой хотите сделать публикацию',
         verbose_name='Группа'
     )
-    image = models.ImageField(upload_to='posts/', blank=True, null=True)
+    image = models.ImageField(
+        upload_to='posts/',
+        blank=True,
+        null=True,
+        verbose_name='Изображение'
+    )
 
     class Meta:
         ordering = ['-pub_date']
@@ -73,3 +78,11 @@ class Follow(models.Model):
         on_delete=models.CASCADE,
         related_name='following'
     )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'author'],
+                name='unique_follow'
+            ),
+        ]

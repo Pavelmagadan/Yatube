@@ -48,10 +48,11 @@ def new_post(request):
 
 
 def post_view(request, username, post_id):
-    author = get_object_or_404(User, username=username)
-    authors_posts = author.posts.all()
-    post = get_object_or_404(authors_posts, id=post_id)
-    posts_count = authors_posts.count()
+    post = get_object_or_404(Post, author__username=username, id=post_id)
+    author = post.author
+    posts_count = author.posts.count()
+    number_of_following = author.follower.count()
+    number_of_follower = author.following.count()
     comments = post.comments.all()
     form = CommentForm()
     return render(
@@ -61,6 +62,8 @@ def post_view(request, username, post_id):
             'author': author,
             'post': post,
             'posts_count': posts_count,
+            'number_of_follower': number_of_follower,
+            'number_of_following': number_of_following,
             'comments': comments,
             'form': form,
         }
@@ -69,11 +72,13 @@ def post_view(request, username, post_id):
 
 def profile(request, username):
     author = get_object_or_404(User, username=username)
-    following = None
+    following_flag = None
     if request.user.is_authenticated and request.user != author:
-        following = author.following.filter(user=request.user).exists()
+        following_flag = author.following.filter(user=request.user).exists()
     post_list = author.posts.all()
-    posts_count = post_list.count()
+    posts_count = author.posts.count()
+    number_of_following = author.follower.count()
+    number_of_follower = author.following.count()
     paginator = Paginator(post_list, 10)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
@@ -82,7 +87,9 @@ def profile(request, username):
         'profile.html',
         {
             'author': author,
-            'following': following,
+            'following_flag': following_flag,
+            'number_of_follower': number_of_follower,
+            'number_of_following': number_of_following,
             'page': page,
             'posts_count': posts_count,
         }
@@ -121,10 +128,9 @@ def post_edit(request, username, post_id):
 
 @login_required
 def add_comment(request, username, post_id):
-    author = get_object_or_404(User, username=username)
-    authors_posts = author.posts.all()
-    post = get_object_or_404(authors_posts, id=post_id)
-    posts_count = authors_posts.count()
+    post = get_object_or_404(Post, author__username=username, id=post_id)
+    author = post.author
+    posts_count = author.posts.count()
     comments = post.comments.all()
     form = CommentForm(request.POST or None)
     if not form.is_valid():

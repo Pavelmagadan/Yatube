@@ -44,10 +44,11 @@ class PostFormTests(TestCase):
             slug='test-group'
         )
         self.test_user = User.objects.create_user(username='Mr. Test')
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.test_user)
 
-    def test_create_post(self):
+    def test_create_post_authorized(self):
         """Валидная форма создает запись в Post."""
         form_data = {
             'text': 'Текст тестового поста',
@@ -63,7 +64,7 @@ class PostFormTests(TestCase):
         )
         time_end_publish = str(datetime.utcnow())
         # Проверяем, добавился ли пост в БД
-        self.assertTrue(Post.objects.exists())
+        self.assertEqual(Post.objects.count(), 1)
         # Проверяем, сработал ли редирект
         self.assertRedirects(response, reverse('index'))
         # Проверяем, что создалась запись с правильными значениями
@@ -75,6 +76,24 @@ class PostFormTests(TestCase):
                 pub_date__range=[time_start_publish, time_end_publish],
                 image=f'posts/{form_data["image"]}'
             ).exists()
+        )
+
+    def test_create_post_guest(self):
+        """Неавторизованный пользователь не может создать запись в Post."""
+        form_data = {
+            'text': 'Текст тестового поста',
+            'group': self.test_group.id,
+        }
+        self.guest_client.post(
+            reverse('new_post'),
+            data=form_data,
+            follow=True
+        )
+        # Проверяем, что запись не добавилась в БД
+        self.assertFalse(
+            Post.objects.exists(),
+            'Неавторизованный пользователь не должен '
+            'иметь возможность создать запись в Post'
         )
 
     def test_edit_post(self):
