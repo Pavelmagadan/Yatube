@@ -30,6 +30,11 @@ class PostFormTests(TestCase):
             content=small_gif,
             content_type='image/gif'
         )
+        cls.uploaded2 = SimpleUploadedFile(
+            name='small.gif',
+            content=small_gif,
+            content_type='image/gif'
+        )
 
     @classmethod
     def tearDownClass(cls):
@@ -83,6 +88,7 @@ class PostFormTests(TestCase):
         form_data = {
             'text': 'Текст тестового поста',
             'group': self.test_group.id,
+            'image': PostFormTests.uploaded2,
         }
         self.guest_client.post(
             reverse('new_post'),

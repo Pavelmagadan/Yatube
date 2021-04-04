@@ -105,7 +105,7 @@ def post_edit(request, username, post_id):
             )
         )
     view_def = 'post_edit'
-    old_post = Post.objects.get(id=post_id)
+    old_post = get_object_or_404(Post, id=post_id)
     form = PostForm(
         request.POST or None,
         files=request.FILES or None,
@@ -174,7 +174,6 @@ def follow_index(request):
 def profile_follow(request, username):
     author = get_object_or_404(
         User,
-        # .objects.exclude(username=request.user.username),
         username=username
     )
     if author.following.filter(user=request.user).exists():
